@@ -1,0 +1,18 @@
+{
+  "name": "lista-asistencia-digital",
+  "version": "1.0.0",
+  "description": "Aplicación web de Lista de Asistencia Digital con firmas - TH-DP-FO-03",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build required for static site with serverless functions'",
+    "netlify": "netlify dev"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "author": "",
+  "license": "ISC"
+}

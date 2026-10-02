@@ -1,0 +1,28 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[dev]
+  command = "netlify dev"
+  port = 8888
+
+[plugins]
+  # Para instalar dependencias de funciones
+  [[plugins.dependencies]]
+    # Instala npm packages para funciones
+    [plugins.dependencies.netlify]
+      command = "npm install"
+
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "production" }
+
+[context.branch-deploy]
+  environment = { NODE_ENV = "production" }

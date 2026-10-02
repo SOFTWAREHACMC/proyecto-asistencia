@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="author" content="Feiber Martinez - Lider Software">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Lista de Asistencia Digital - TH-DP-FO-03</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e8e8e8;padding:20px}
+.container{max-width:1100px;margin:0 auto;background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 15px rgba(0,0,0,.15)}
+.header{display:flex;align-items:center;gap:20px;margin-bottom:20px;border-bottom:2px solid #1a3a5c;padding:40px 0 15px}
+.header .logo{flex-shrink:0}
+.header .logo img{max-height:90px;width:auto;display:block}
+.header .header-text{flex:1;text-align:center}
+.header .header-text h1{font-size:20px;color:#1a3a5c;letter-spacing:1px;text-transform:uppercase}
+.header .header-text .sub{display:flex;justify-content:center;gap:30px;font-size:13px;color:#555;margin-top:5px}
+.campo{margin-bottom:12px}
+#pdf-content{padding:0 25px}
+.campo label{display:block;font-size:13px;font-weight:600;color:#1a3a5c;margin-bottom:3px}
+.campo input,.campo select{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:4px;font-size:15px;min-height:40px;transition:border .2s}
+.campo input:focus{border-color:#1a3a5c;outline:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.fila-fh{display:flex;gap:15px;justify-content:flex-start;margin:0}
+.fila-fh .campo:first-child{flex:0 0 120px}
+.fila-fh .campo{margin-bottom:0;flex:1}
+.fila-fh input{width:100%}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.check-group{display:flex;flex-wrap:wrap;gap:8px 20px;padding:8px 0}
+.check-group label{font-size:13px;display:flex;align-items:center;gap:5px;cursor:pointer}
+.check-group input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#1a3a5c}
+.tabla-wrap{overflow-x:auto;margin-top:15px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#1a3a5c;color:#fff;padding:10px 6px;text-align:center;font-weight:600;white-space:nowrap}
+td{padding:6px;text-align:center;border:1px solid #ccc;vertical-align:middle}
+td input{width:100%;padding:7px 6px;border:1px solid #ddd;border-radius:3px;font-size:13px;text-align:left;box-sizing:border-box}
+td input:focus{border-color:#1a3a5c;outline:0}
+td .firma-cell{min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+td .firma-cell img{max-width:100px;max-height:40px;border:1px solid #eee;border-radius:3px;background:#fff}
+.btn-firmar{padding:6px 14px;font-size:12px;border:none;border-radius:4px;cursor:pointer;background:#1a3a5c;color:#fff;transition:background .2s;white-space:nowrap}
+.btn-firmar:hover{background:#2a5a8c}
+.btn-firmar.firmado{background:#27ae60}
+.btn-firmar.firmado:hover{background:#1e8449}
+.btn-eliminar{background:0 0;border:none;color:#e74c3c;font-size:18px;cursor:pointer;padding:2px 6px;transition:color .2s}
+.btn-eliminar:hover{color:#c0392b}
+.acciones{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.acciones button{padding:12px 30px;font-size:15px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .2s}
+.btn-agregar{background:#1a3a5c;color:#fff}
+.btn-agregar:hover{background:#2a5a8c}
+.btn-pdf{background:#27ae60;color:#fff}
+.btn-pdf:hover{background:#1e8449}
+.btn-limpiar{background:#e74c3c;color:#fff}
+.btn-limpiar:hover{background:#c0392b}
+.btn-agregar-fila{background:#3498db;color:#fff;padding:10px 20px;font-size:14px;border:none;border-radius:6px;cursor:pointer;margin-top:10px;transition:background .2s}
+.btn-agregar-fila:hover{background:#2980b9}
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:#fff;border-radius:10px;padding:25px;width:90%;max-width:500px;box-shadow:0 5px 30px rgba(0,0,0,.3);text-align:center}
+.modal-box h3{color:#1a3a5c;margin-bottom:5px;font-size:18px}
+.modal-box p{color:#666;font-size:13px;margin-bottom:12px}
+#canvas-firma{border:2px dashed #aaa;border-radius:6px;width:100%;height:200px;cursor:crosshair;background:#fafafa;touch-action:none}
+.modal-acciones{display:flex;gap:10px;justify-content:center;margin-top:15px;flex-wrap:wrap}
+.modal-acciones button{padding:10px 25px;font-size:14px;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s}
+.btn-guardar-firma{background:#27ae60;color:#fff}
+.btn-guardar-firma:hover{background:#1e8449}
+.btn-guardar-firma:disabled{background:#ccc;cursor:not-allowed}
+.btn-limpiar-firma{background:#f39c12;color:#fff}
+.btn-limpiar-firma:hover{background:#d68910}
+.btn-cerrar-firma{background:#e74c3c;color:#fff}
+.btn-cerrar-firma:hover{background:#c0392b}
+.loading{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);z-index:2000;justify-content:center;align-items:center;flex-direction:column;gap:10px}
+.loading.active{display:flex}
+.loading .spinner{width:50px;height:50px;border:5px solid #ddd;border-top-color:#1a3a5c;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:#1a3a5c;font-weight:600;font-size:16px}
+.obs{font-size:12px;color:#888;margin-top:15px;padding:10px;border-top:1px solid #eee;text-align:center}
+.nombre-asistente{font-weight:600;color:#1a3a5c}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#27ae60;color:#fff;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:600;z-index:3000;display:none;align-items:center;gap:10px;box-shadow:0 4px 15px rgba(0,0,0,.2)}
+.toast.show{display:flex}
+.toast .check{font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>Generando PDF...</p>
+</div>
+
+<div class="container" id="app">
+  <div id="pdf-content">
+    <div class="header">
+      <div class="logo">
+        <img src="logo.jpg" alt="Logo Hospital" id="logo-img">
+      </div>
+      <div class="header-text">
+        <h1>Formato Lista de Asistencia</h1>
+        <div class="sub">
+          <span><strong>CÓDIGO:</strong> TH-DP-FO-03</span>
+          <span><strong>FECHA:</strong> 29/08/2024</span>
+          <span><strong>VERSIÓN:</strong> 03</span>
+        </div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="campo">
+        <label>Tema o nombre de la capacitaci&oacute;n</label>
+        <input type="text" id="tema" placeholder="Ej: Signos vitales y control neurológico">
+      </div>
+      <div class="fila-fh" style="margin-top:0">
+        <div class="campo">
+          <label>Fecha</label>
+          <input type="date" id="fecha">
+        </div>
+        <div class="campo">
+          <label>Hora inicio</label>
+          <input type="time" id="hora-inicio">
+        </div>
+        <div class="campo">
+          <label>Hora fin</label>
+          <input type="time" id="hora-fin">
+        </div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="campo">
+        <label>Proceso / &Aacute;rea / Servicio que convoca</label>
+        <input type="text" id="area" placeholder="Ej: Auxiliares de Enfermería">
+      </div>
+      <div class="campo">
+        <label>Nombre del expositor y cargo</label>
+        <input type="text" id="expositor" placeholder="Ej: Feiber Martinez - Lider Software">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Tipo de actividad:</label>
+      <div class="check-group" id="tipo-actividad">
+        <label><input type="checkbox" value="Capacitación"> Capacitaci&oacute;n</label>
+        <label><input type="checkbox" value="Reunión"> Reuni&oacute;n</label>
+        <label><input type="checkbox" value="Divulgación"> Divulgaci&oacute;n</label>
+        <label><input type="checkbox" value="Sensibilización"> Sensibilizaci&oacute;n</label>
+        <label><input type="checkbox" value="Curso"> Curso</label>
+        <label><input type="checkbox" value="Charla"> Charla</label>
+        <label><input type="checkbox" value="Taller"> Taller</label>
+        <label><input type="checkbox" value="Inducción"> Inducci&oacute;n</label>
+        <label><input type="checkbox" value="Reinducción"> Reinducci&oacute;n</label>
+        <label><input type="checkbox" value="Otro"> Otro</label>
+      </div>
+    </div>
+
+    <div class="tabla-wrap">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th style="width:40px">N&deg;</th>
+            <th style="min-width:220px">NOMBRES Y APELLIDOS</th>
+            <th style="min-width:140px">C&Eacute;DULA</th>
+            <th style="min-width:160px">CARGO</th>
+            <th style="min-width:160px">&Aacute;REA O SERVICIO</th>
+            <th style="min-width:130px">FIRMA</th>
+            <th style="width:30px"></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+    </div>
+
+    <button class="btn-agregar-fila" id="agregar-fila">+ Agregar asistente</button>
+
+    <div class="obs">Observaci&oacute;n: En caso de levantar acta de reuni&oacute;n; se debe anexar este registro.</div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn-pdf" id="guardar-pdf">Guardar PDF</button>
+    <button class="btn-limpiar" id="limpiar-todo">Limpiar todo</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <h3>Firma digital</h3>
+    <p>Firme en el recuadro usando su dedo o mouse</p>
+    <canvas id="canvas-firma"></canvas>
+    <div class="modal-acciones">
+      <button class="btn-limpiar-firma" id="limpiar-firma">Limpiar</button>
+      <button class="btn-guardar-firma" id="guardar-firma">Guardar firma</button>
+      <button class="btn-cerrar-firma" id="cerrar-firma">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-overlay">
+  <div class="modal-box" style="max-width:400px">
+    <h3>Confirmar</h3>
+    <p id="confirm-message" style="margin:10px 0 15px"></p>
+    <div class="modal-acciones">
+      <button class="btn-pdf" id="confirm-si">S&iacute;</button>
+      <button class="btn-limpiar" id="confirm-no">No</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">
+  <span class="check">&#10003;</span>
+  <span class="toast-msg"></span>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const tema = document.getElementById('tema');
+  const fecha = document.getElementById('fecha');
+  const horaInicio = document.getElementById('hora-inicio');
+  const horaFin = document.getElementById('hora-fin');
+  const area = document.getElementById('area');
+  const expositor = document.getElementById('expositor');
+  const tbody = document.getElementById('tabla-body');
+  const btnAgregarFila = document.getElementById('agregar-fila');
+  const btnGuardarPDF = document.getElementById('guardar-pdf');
+  const btnLimpiar = document.getElementById('limpiar-todo');
+  const modalOverlay = document.getElementById('modal-overlay');
+  const canvasFirma = document.getElementById('canvas-firma');
+  const btnGuardarFirma = document.getElementById('guardar-firma');
+  const btnLimpiarFirma = document.getElementById('limpiar-firma');
+  const btnCerrarFirma = document.getElementById('cerrar-firma');
+  const loading = document.getElementById('loading');
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmSi = document.getElementById('confirm-si');
+  const confirmNo = document.getElementById('confirm-no');
+
+  let rowCount = 0;
+  let currentRowEl = null;
+  let drawing = false;
+  let canvasReady = false;
+
+  function showConfirmModal(message) {
+    return new Promise(function(resolve) {
+      confirmMessage.textContent = message;
+      confirmOverlay.classList.add('active');
+      function cleanup() {
+        confirmOverlay.classList.remove('active');
+        confirmSi.removeEventListener('click', onSi);
+        confirmNo.removeEventListener('click', onNo);
+      }
+      function onSi() { cleanup(); resolve(true); }
+      function onNo() { cleanup(); resolve(false); }
+      confirmSi.addEventListener('click', onSi);
+      confirmNo.addEventListener('click', onNo);
+    });
+  }
+
+  function showToast(msg) {
+    var el = document.getElementById('toast');
+    el.querySelector('.toast-msg').textContent = msg;
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 2500);
+  }
+
+  fecha.valueAsDate = new Date();
+
+  function sizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvasFirma.clientWidth;
+    const h = canvasFirma.clientHeight;
+    if (w === 0 || h === 0) return false;
+    canvasFirma.width = w * dpr;
+    canvasFirma.height = h * dpr;
+    const ctx = canvasFirma.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    return true;
+  }
+
+  function clearCanvas() {
+    const ctx = canvasFirma.getContext('2d');
+    ctx.clearRect(0, 0, canvasFirma.clientWidth, canvasFirma.clientHeight);
+  }
+
+  function isCanvasEmpty() {
+    const ctx = canvasFirma.getContext('2d');
+    const w = canvasFirma.width;
+    const h = canvasFirma.height;
+    if (w === 0 || h === 0) return true;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+    for (let i = 3; i < d.length; i += 4) {
+      if (d[i] !== 0) return false;
+    }
+    return true;
+  }
+
+  function getCanvasPos(e) {
+    const r = canvasFirma.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  canvasFirma.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    drawing = true;
+    btnGuardarFirma.disabled = false;
+    const p = getCanvasPos(e);
+    const ctx = canvasFirma.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  });
+
+  canvasFirma.addEventListener('pointermove', function(e) {
+    e.preventDefault();
+    if (!drawing) return;
+    const p = getCanvasPos(e);
+    const ctx = canvasFirma.getContext('2d');
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+
+  canvasFirma.addEventListener('pointerup', function(e) { e.preventDefault(); drawing = false; });
+  canvasFirma.addEventListener('pointercancel', function(e) { e.preventDefault(); drawing = false; });
+  canvasFirma.addEventListener('pointerleave', function(e) { e.preventDefault(); drawing = false; });
+  canvasFirma.style.touchAction = 'none';
+
+  function renumRows() {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((tr, idx) => {
+      tr.querySelector('.num-row').textContent = idx + 1;
+    });
+  }
+
+  function escAttr(s) {
+    return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function agregarFila(data) {
+    data = data || {};
+    rowCount++;
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><span class="num-row nombre-asistente">' + rowCount + '</span></td>' +
+      '<td><input type="text" class="input-nombre" placeholder="Nombres y apellidos" value="' + escAttr(data.nombre || '') + '"></td>' +
+      '<td><input type="text" class="input-cedula" placeholder="C&eacute;dula" value="' + escAttr(data.cedula || '') + '"></td>' +
+      '<td><input type="text" class="input-cargo" placeholder="Cargo" value="' + escAttr(data.cargo || '') + '"></td>' +
+      '<td><input type="text" class="input-area" placeholder="&Aacute;rea o servicio" value="' + escAttr(data.areaServicio || '') + '"></td>' +
+      '<td><div class="firma-cell">' +
+        (data.firma ? '<img src="' + escAttr(data.firma) + '" alt="firma">' : '') +
+        '<button class="btn-firmar' + (data.firma ? ' firmado' : '') + '" type="button">' +
+        (data.firma ? 'Firmado' : 'Firmar') +
+        '</button></div></td>' +
+      '<td><button class="btn-eliminar" type="button" title="Eliminar fila">&times;</button></td>';
+    tbody.appendChild(tr);
+
+    tr.querySelector('.btn-firmar').addEventListener('click', function() {
+      currentRowEl = tr;
+      abrirModal();
+    });
+
+    tr.querySelector('.btn-eliminar').addEventListener('click', function() {
+      tr.remove();
+      renumRows();
+    });
+
+    return tr;
+  }
+
+  function abrirModal() {
+    modalOverlay.classList.add('active');
+    setTimeout(function() {
+      sizeCanvas();
+      clearCanvas();
+      btnGuardarFirma.disabled = true;
+      canvasReady = true;
+    }, 100);
+  }
+
+  function cerrarModal() {
+    modalOverlay.classList.remove('active');
+    currentRowEl = null;
+    canvasReady = false;
+  }
+
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) cerrarModal();
+  });
+
+  btnCerrarFirma.addEventListener('click', cerrarModal);
+
+  btnLimpiarFirma.addEventListener('click', function() {
+    clearCanvas();
+    btnGuardarFirma.disabled = true;
+  });
+
+  btnGuardarFirma.addEventListener('click', function() {
+    if (!canvasReady || isCanvasEmpty()) return;
+    const dataURL = canvasFirma.toDataURL('image/png');
+    if (currentRowEl) {
+      const cell = currentRowEl.querySelector('.firma-cell');
+      var img = cell.querySelector('img');
+      if (img) {
+        img.src = dataURL;
+      } else {
+        img = document.createElement('img');
+        img.src = dataURL;
+        img.alt = 'firma';
+        cell.insertBefore(img, cell.querySelector('.btn-firmar'));
+      }
+      const btn = cell.querySelector('.btn-firmar');
+      btn.textContent = 'Firmado';
+      btn.classList.add('firmado');
+    }
+    cerrarModal();
+  });
+
+  btnAgregarFila.addEventListener('click', function() { agregarFila(); });
+
+  btnLimpiar.addEventListener('click', async function() {
+    if (!await showConfirmModal('¿Está seguro de limpiar todos los datos? Se perderán las firmas registradas.')) return;
+    tbody.innerHTML = '';
+    rowCount = 0;
+    tema.value = '';
+    fecha.valueAsDate = new Date();
+    horaInicio.value = '';
+    horaFin.value = '';
+    area.value = '';
+    expositor.value = '';
+    document.querySelectorAll('#tipo-actividad input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  });
+
+  btnGuardarPDF.addEventListener('click', async function() {
+    if (await showConfirmModal('¿Está seguro de generar el PDF con los datos actuales?'))
+      await generarPDF();
+  });
+
+  async function generarPDF() {
+    loading.classList.add('active');
+    try {
+      const element = document.getElementById('pdf-content');
+      var backups = [];
+
+      var allInputs = element.querySelectorAll('input');
+      for (var i = 0; i < allInputs.length; i++) {
+        var inp = allInputs[i];
+        var type = (inp.getAttribute('type') || 'text').toLowerCase();
+        if (type === 'checkbox') {
+          var cbSpan = document.createElement('span');
+          cbSpan.textContent = inp.checked ? 'X' : ' ';
+          cbSpan.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:2px solid #333;font-size:12px;font-weight:bold;margin-right:5px;background:#fff;color:#000';
+          backups.push({ parent: inp.parentNode, next: inp.nextSibling, input: inp, span: cbSpan });
+          inp.parentNode.replaceChild(cbSpan, inp);
+          continue;
+        }
+        if (type === 'radio') continue;
+        var span = document.createElement('span');
+        span.textContent = inp.value || '';
+        var isTbl = inp.closest('td');
+        var pad = isTbl ? '7px 6px' : '10px 12px';
+        var fsize = isTbl ? '13px' : '15px';
+        var minH = isTbl ? '31px' : '40px';
+        var border = isTbl ? '1px solid transparent' : '1px solid #ccc';
+        span.style.cssText = 'display:block;padding:' + pad + ';font-size:' + fsize + ';font-family:Segoe UI,Arial,sans-serif;color:#000;background:#fff;min-height:' + minH + ';box-sizing:border-box;border:' + border + ';text-align:left;white-space:normal;word-break:break-word;line-height:1.3;border-radius:4px';
+        backups.push({ parent: inp.parentNode, next: inp.nextSibling, input: inp, span: span });
+        inp.parentNode.replaceChild(span, inp);
+      }
+
+      var cbLabels = Array.from(document.querySelectorAll('#tipo-actividad label'));
+
+      var hideStyle = document.createElement('style');
+      hideStyle.id = 'pdf-hide-col';
+      hideStyle.textContent = '#tabla th:last-child, #tabla td:last-child, #tabla .btn-firmar, #pdf-content .btn-agregar-fila { display:none !important }';
+      document.head.appendChild(hideStyle);
+
+      var contStyle = document.createElement('style');
+      contStyle.id = 'pdf-cont-style';
+      contStyle.textContent =
+        '#pdf-content.continuation-mode .row2,' +
+        '#pdf-content.continuation-mode .btn-agregar-fila,' +
+        '#pdf-content.continuation-mode .obs { display:none!important }' +
+        '#pdf-content.continuation-mode .campo>label:first-child { display:none!important }' +
+        '#pdf-content.continuation-mode .header { padding:10px 0 8px!important; margin-bottom:10px!important }' +
+        '#pdf-content.continuation-mode .header .logo img { max-height:65px!important }' +
+        '#pdf-content.continuation-mode .header-text h1 { font-size:16px!important }' +
+        '#pdf-content.continuation-mode .header-text .sub { font-size:11px!important; gap:15px!important }';
+      document.head.appendChild(contStyle);
+
+      var page1Style = document.createElement('style');
+      page1Style.id = 'pdf-page1-style';
+      page1Style.textContent =
+        '#pdf-content.page1-mode .header{padding:12px 0 8px!important;margin-bottom:10px!important}' +
+        '#pdf-content.page1-mode .header .logo img{max-height:55px!important}' +
+        '#pdf-content.page1-mode .header-text h1{font-size:15px!important}' +
+        '#pdf-content.page1-mode .header-text .sub{font-size:10px!important;gap:8px!important}' +
+        '#pdf-content.page1-mode .campo{margin-bottom:4px!important}' +
+        '#pdf-content.page1-mode .campo label{font-size:10px!important;margin-bottom:1px!important}' +
+        '#pdf-content.page1-mode .campo input{padding:4px 6px!important;font-size:11px!important;min-height:24px!important}' +
+        '#pdf-content.page1-mode .row2{gap:6px!important}' +
+        '#pdf-content.page1-mode .fila-fh{gap:6px!important}' +
+        '#pdf-content.page1-mode .fila-fh .campo{flex:1!important}' +
+        '#pdf-content.page1-mode .check-group{gap:3px 8px!important;padding:2px 0!important}' +
+        '#pdf-content.page1-mode .check-group label{font-size:10px!important}' +
+        '#pdf-content.page1-mode .tabla-wrap{margin-top:3px!important}' +
+        '#pdf-content.page1-mode th{padding:5px 4px!important;font-size:10px!important}' +
+        '#pdf-content.page1-mode td span{padding:5px 4px!important;font-size:11px!important;min-height:24px!important}' +
+        '#pdf-content.page1-mode .campo span{padding:4px 6px!important;font-size:11px!important;min-height:24px!important}' +
+        '#pdf-content.page1-mode .check-group label span{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:13px!important;height:13px!important;border:1px solid #333!important;font-size:9px!important;margin-right:3px!important}';
+      document.head.appendChild(page1Style);
+
+      await Promise.all(Array.from(element.querySelectorAll('img')).map(function(img) {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise(function(resolve) {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+
+      const allRows = Array.from(tbody.querySelectorAll('tr'));
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('l', 'mm', 'letter');
+      pdf.setProperties({
+        title: 'Lista de Asistencia - ' + (tema.value.trim() || 'Sin tema'),
+        author: 'Feiber Martinez - Lider Software',
+        creator: 'Lista de Asistencia Digital v1.0'
+      });
+
+      const pageW = 279.4;
+      const pageH = 215.9;
+      const leftMargin = 10;
+      const topMargin = 15;
+      const bottomMargin = 10;
+      const imgW = pageW - leftMargin * 2;
+      const usableH = pageH - topMargin - bottomMargin;
+
+      var batchSizeFirst = 16;
+      var batchSizeRest = 16;
+
+      if (allRows.length > 0) {
+        element.classList.add('page1-mode');
+        allRows.forEach(function(r) { r.style.display = 'none'; });
+        var c0 = await html2canvas(element, {
+          scale: 2, useCORS: true, allowTaint: true,
+          logging: false, scrollY: 0, height: element.scrollHeight,
+          backgroundColor: '#ffffff'
+        });
+        var h0full = (c0.height * imgW) / c0.width;
+
+        allRows[0].style.display = '';
+        var c1 = await html2canvas(element, {
+          scale: 2, useCORS: true, allowTaint: true,
+          logging: false, scrollY: 0, height: element.scrollHeight,
+          backgroundColor: '#ffffff'
+        });
+        var h1full = (c1.height * imgW) / c1.width;
+        var rowHmm = h1full - h0full;
+
+        if (allRows.length > 1) {
+          allRows[1].style.display = '';
+          var c2 = await html2canvas(element, {
+            scale: 2, useCORS: true, allowTaint: true,
+            logging: false, scrollY: 0, height: element.scrollHeight,
+            backgroundColor: '#ffffff'
+          });
+          var h2full = (c2.height * imgW) / c2.width;
+          rowHmm = h2full - h1full;
+        }
+
+        allRows[0].style.display = 'none';
+        allRows[1].style.display = 'none';
+
+        element.classList.remove('page1-mode');
+
+        element.classList.add('continuation-mode');
+        var c0cont = await html2canvas(element, {
+          scale: 2, useCORS: true, allowTaint: true,
+          logging: false, scrollY: 0, height: element.scrollHeight,
+          backgroundColor: '#ffffff'
+        });
+        var h0cont = (c0cont.height * imgW) / c0cont.width;
+        element.classList.remove('continuation-mode');
+
+        batchSizeFirst = Math.max(1, Math.floor((usableH - h0full) / rowHmm));
+        batchSizeRest = Math.max(1, Math.floor((usableH - h0cont) / rowHmm));
+
+        allRows.forEach(function(r) { r.style.display = ''; });
+      }
+
+      var totalBatches = allRows.length <= batchSizeFirst ? 1 :
+        1 + Math.ceil((allRows.length - batchSizeFirst) / batchSizeRest);
+
+      for (var b = 0; b < totalBatches; b++) {
+        allRows.forEach(function(r) { r.style.display = 'none'; });
+
+        if (b === 0) {
+          var end0 = Math.min(batchSizeFirst, allRows.length);
+          for (var i0 = 0; i0 < end0; i0++) allRows[i0].style.display = '';
+          element.classList.add('page1-mode');
+          element.classList.remove('continuation-mode');
+        } else {
+          var start = batchSizeFirst + (b - 1) * batchSizeRest;
+          var end = Math.min(start + batchSizeRest, allRows.length);
+          for (var i = start; i < end; i++) allRows[i].style.display = '';
+          element.classList.remove('page1-mode');
+          element.classList.add('continuation-mode');
+        }
+
+        cbLabels.forEach(function(l) {
+          if (b === 0) {
+            l.style.display = '';
+          } else {
+            var sp = l.querySelector('span');
+            l.style.display = (sp && sp.textContent === 'X') ? '' : 'none';
+          }
+        });
+
+        var pageCanvas = await html2canvas(element, {
+          scale: 2, useCORS: true, allowTaint: true,
+          logging: false, scrollY: 0, height: element.scrollHeight,
+          backgroundColor: '#ffffff'
+        });
+
+        if (b > 0) pdf.addPage();
+        var imgH = (pageCanvas.height * imgW) / pageCanvas.width;
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', leftMargin, topMargin, imgW, imgH);
+      }
+
+      element.classList.remove('page1-mode');
+      element.classList.remove('continuation-mode');
+      allRows.forEach(function(r) { r.style.display = ''; });
+      cbLabels.forEach(function(l) { l.style.display = ''; });
+
+      var hideColEl = document.getElementById('pdf-hide-col');
+      if (hideColEl) hideColEl.remove();
+      var contStyleEl = document.getElementById('pdf-cont-style');
+      if (contStyleEl) contStyleEl.remove();
+      var page1StyleEl = document.getElementById('pdf-page1-style');
+      if (page1StyleEl) page1StyleEl.remove();
+
+      for (var j = 0; j < backups.length; j++) {
+        var b2 = backups[j];
+        if (b2.span.parentNode) {
+          b2.span.parentNode.replaceChild(b2.input, b2.span);
+        }
+      }
+
+      const temaVal = tema.value.trim() || 'lista_asistencia';
+      const fechaVal = fecha.value ? fecha.value.replace(/-/g, '') : '';
+      var nombreArchivo = 'Lista_Asistencia_' + temaVal.substring(0, 30) + '_' + fechaVal;
+      nombreArchivo = nombreArchivo.replace(/[^a-zA-Z0-9_\-áéíóúñüÁÉÍÓÚÑÜ\s]/g, '').replace(/\s+/g, '_');
+      pdf.save((nombreArchivo || 'Lista_Asistencia') + '.pdf');
+      showToast('PDF generado correctamente');
+    } catch (err) {
+      alert('Error al generar PDF: ' + err.message);
+    } finally {
+      loading.classList.remove('active');
+    }
+  }
+
+  agregarFila();
+  agregarFila();
+  agregarFila();
+
+  window.addEventListener('resize', function() {
+    if (modalOverlay.classList.contains('active') && canvasReady) {
+      sizeCanvas();
+      clearCanvas();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
