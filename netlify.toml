@@ -11,13 +11,6 @@
   command = "netlify dev"
   port = 8888
 
-[plugins]
-  # Para instalar dependencias de funciones
-  [[plugins.dependencies]]
-    # Instala npm packages para funciones
-    [plugins.dependencies.netlify]
-      command = "npm install"
-
 [context.production]
   environment = { NODE_ENV = "production" }
 
